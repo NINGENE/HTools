@@ -116,13 +116,18 @@ def renameAndColorV2(oldName, newName, color):
         cmds.setAttr(newName + 'Shape.overrideColor', colors[color])
 
 #オフセット用のNULLを作成
-def creatOffset(osName, crName, jointName):
-	cmds.group(n=osName, w=True, em=True)
-	cmds.parent(crName, osName)
+def creatOffset(osName, crName, jointName, isParent=True):
+    cmds.group(n=osName, w=True, em=True)
+    cmds.parent(crName, osName)
 
-	cmds.parentConstraint(jointName, osName)
-	cmds.select(osName, r=True)
-	cmds.delete(cn=True)
+    if isParent:
+        cmds.parentConstraint(jointName, osName)
+        cmds.select(osName, r=True)
+        cmds.delete(cn=True)
+    else:
+        cmds.pointConstraint(jointName, osName)
+        cmds.select(osName, r=True)
+        cmds.delete(cn=True)        
 	
 def freezeAndDeletehistory(node=None):
     if node:
@@ -177,16 +182,16 @@ def setKeyAbleS(ctrlName, sx, sy, sz):
     if sz==1:
 		cmds.setAttr(ctrlName + '.sz', keyable=False, lock=True)
 
+def checkNamespace():
+    global nameSpaceName
+    if cmds.objExists('MODEL:Root'):
+        nameSpaceName = 'MODEL:'
+    else:
+        print('It has no NameSpace.')
+
 #形状は別のスクリプトにしようかな
 ##移植済み
-def createBox():
-    cmds.curve(d=1, p=[(0.5, 0.5, 0.5), (0.5, 0.5, -0.5), (-0.5, 0.5, -0.5),
-										(-0.5, -0.5, -0.5), (0.5, -0.5, -0.5), (0.5, 0.5, -0.5),
-										(-0.5, 0.5, -0.5), (-0.5, 0.5, 0.5), (0.5, 0.5, 0.5),
-										(0.5, -0.5, 0.5), (0.5, -0.5, -0.5), (-0.5, -0.5, -0.5),
-										(-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (-0.5, -0.5, 0.5),
-										(-0.5, 0.5, 0.5)], 
-										k=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15])
+
 
 def createToe():
     cmds.curve(d=3, p=[(15, 0, 0), (14.9, 0, 3.5), (14.5, 0, 11),
@@ -200,33 +205,7 @@ def createTriangle():
 
     return tempName
 
-def createSphere():
-    i = 0
-    lastName = 'tes'
-    while i < 3:
-        ctrlName = 'sp0' + str(i) + 'cir'
-        tempName = cmds.circle(c=(0, 0, 0), nr=(0, 1, 0), sw=360, r=50, d=3, ut=False, s=8, ch=True)
-        renameAndColor(tempName[0], ctrlName, 22)
-        if i == 0:
-            lastName = ctrlName
-            cmds.rotate(0, 0, 0)
-        elif i == 1:
-            cmds.rotate(0, 0, 90)
-        elif i == 2:
-            cmds.rotate(90, 0, 90)
-        else:
-            pass
 
-        freezeAndDeletehistory()
-
-        if i > 0:
-            cmds.select(ctrlName + 'Shape')
-            cmds.select(lastName, add=True)
-            cmds.parent(r=True, s=True)
-            cmds.delete(ctrlName)
-        i+=1
-
-    return lastName
 
 def createSimpleSphere():
     cmds.curve(d=1, p=[(0, 0, 1), (0, 0.5, 0.866025), (0, 0.866025, 0.5), 
@@ -243,22 +222,14 @@ def createSimpleSphere():
 										k=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 
 										   17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32])
 
-
-
-def createLikeGear():
-    tempName = cmds.circle(c=(0, 0, 0), nr=(0, 1, 0), sw=360, r=50, d=3, ut=False, s=16, ch=True)
-    cmds.select(cl=True)
-    i=0
-    while i < 16:
-        editPoint = tempName[0]+'.cv['+str(i)+']'
-        if i %2 == 0:
-            cmds.select(editPoint, add=True)
-        i+=1
-    cmds.scale(0.4, 0.4, 0.4)
-    cmds.select(tempName)
-    freezeAndDeletehistory()
-
-    return tempName[0]
+def createCandyLike():
+    cmds.curve(d=1, p=[(0, 0, 0), (-2, 0, 0), (-2.292893, 0, 0.707107),
+								(-3, 0, 1), (-3.707107, 0, 0.707107), (-4, 0, 0),
+								(-3.707107, 0, -0.707107), (-3, 0, -1),
+								(-2.292893, 0, -0.707107), (-2, 0, 0),
+								(-2.292893, 0, 0.707107), (-3.707107, 0, -0.707107),
+								(-4, 0, 0), (-3.707107, 0, 0.707107), (-2.292893, 0, -0.707107)],
+								k=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14])
 
 ##移植済み
 def createFSPyramid():

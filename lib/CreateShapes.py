@@ -87,17 +87,52 @@ def pyramid():
     
     return tempName
 
-def candyLike():
-    cmds.curve(d=1, p=[(0, 0, 0), (-2, 0, 0), (-2.292893, 0, 0.707107),
-								(-3, 0, 1), (-3.707107, 0, 0.707107), (-4, 0, 0),
-								(-3.707107, 0, -0.707107), (-3, 0, -1),
-								(-2.292893, 0, -0.707107), (-2, 0, 0),
-								(-2.292893, 0, 0.707107), (-3.707107, 0, -0.707107),
-								(-4, 0, 0), (-3.707107, 0, 0.707107), (-2.292893, 0, -0.707107)],
-								k=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14])
+def gear():
+    tempName = cmds.circle(c=(0, 0, 0), nr=(0, 1, 0), sw=360, r=50, d=3, ut=False, s=16, ch=True)
+    cmds.select(cl=True)
+    i=0
+    while i < 16:
+        editPoint = tempName[0]+'.cv['+str(i)+']'
+        if i %2 == 0:
+            cmds.select(editPoint, add=True)
+        i+=1
+    cmds.scale(0.4, 0.4, 0.4)
+    cmds.select(tempName)
+    HToolsLib.freezeAndDeletehistory()
+
+    return tempName[0]
+
+def sphere(shapeName):
+    CIRCLE_ODER = ('A', 'B', 'C')
+    topNodeName = ''
+    for i in range(1, 4):
+        ctrlName = shapeName + CIRCLE_ODER[i-1]
+        tempName = cmds.circle(c=(0, 0, 0), nr=(0, 1, 0), sw=360, r=1, d=3, ut=False, s=8, ch=True)
+        HToolsLib.renameAndColor(tempName[0], ctrlName, 22)
+        cmds.select(ctrlName, r=True)
+        if i == 1:
+            topNodeName = ctrlName
+            cmds.rotate(0, 0, 0)
+        elif i == 2:
+            cmds.rotate(0, 0, 90)
+        elif i == 3:
+            cmds.rotate(90, 0, 90)
+        else:
+            pass
+
+        HToolsLib.freezeAndDeletehistory()
+
+        if i > 1:
+            cmds.select(ctrlName + 'Shape')
+            cmds.select(topNodeName, add=True)
+            cmds.parent(r=True, s=True)
+            cmds.delete(ctrlName)
+
+    return topNodeName
+
 #FKIK切り替えコントローラーの作成
 #スイッチの名前変えられるようにするべき
-def createFKIKSwitch():
+def createFKIKSwitch(ctlScale = 1):
     allController = []  #最後のペアレント用のリスト
 
     #'FK'文字の作成
@@ -110,7 +145,7 @@ def createFKIKSwitch():
                                   (-9, 0, -15), (-7, 0, -25)], 
                                k=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 
-    bbdsLib.renameAndColor(tempName, ctrlName, 16)
+    HToolsLib.renameAndColor(tempName, ctrlName, 16)
     
 
     ctrlName = 'curve_FK_K' #テンポラリのノードなのでappendしない
@@ -121,13 +156,13 @@ def createFKIKSwitch():
                                   (11, 0, -6), (14, 0, -26), (5, 0, -27)], 
                                k=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
 
-    bbdsLib.renameAndColor(tempName, ctrlName, 16)
+    HToolsLib.renameAndColor(tempName, ctrlName, 16)
 
     cmds.parent('curve_FK_KShape', 'curve_FK', r=True, s=True)
     cmds.rename('curve_FKShape', 'curve_FK_FShape')
     cmds.delete('curve_FK_K')
     cmds.move(0, 0, -30, 'curve_FK', r=True)
-    bbdsLib.freezeAndDeletehistory('curve_FK')
+    HToolsLib.freezeAndDeletehistory('curve_FK')
     
     
     #'IK'文字の作成
@@ -140,7 +175,7 @@ def createFKIKSwitch():
                                   (-27, 0, 14), (-26, 0, -16), (-30, 0, -16), (-29, 0, -23)], 
                                k=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
 
-    bbdsLib.renameAndColor(tempName, ctrlName, 16)
+    HToolsLib.renameAndColor(tempName, ctrlName, 16)
 
     
     ctrlName = 'curve_IK_K' #テンポラリのノードなのでappendしない
@@ -151,17 +186,18 @@ def createFKIKSwitch():
                                   (10, 0, -7), (10, 0, -22), (2, 0, -21)], 
                                k=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
 
-    bbdsLib.renameAndColor(tempName, ctrlName, 16)
+    HToolsLib.renameAndColor(tempName, ctrlName, 16)
 
     cmds.parent('curve_IK_KShape', 'curve_IK', r=True, s=True)
 
     cmds.rename('curve_IKShape', 'curve_IK_IShape')
     cmds.delete('curve_IK_K')
     cmds.move(0, 0, 30, 'curve_IK', r=True)
-    bbdsLib.freezeAndDeletehistory('curve_IK')
+    HToolsLib.freezeAndDeletehistory('curve_IK')
 
     #HandSwitcherの作成
-    ctrlName = 'HandCtrl_SWTC_L'
+    baseHandCtrlName = 'handCtrl_SWTC'
+    ctrlName = baseHandCtrlName + '_L'
     allController.append(ctrlName)
 
     tempName = cmds.curve(d=1, p=[(6, 0, -5), (3, 0, -7), (1, 0, -10), 
@@ -177,31 +213,32 @@ def createFKIKSwitch():
                                   (9, 0, -3), (6, 0, -5)], 
                                k=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32])
 
-    bbdsLib.renameAndColor(tempName, ctrlName, 16)
+    HToolsLib.renameAndColor(tempName, ctrlName, 16)
 
-    ctrlName = 'HandCtrl_SWTC_R'
+    ctrlName = baseHandCtrlName + '_R'
     allController.append(ctrlName)
 
-    tempName = cmds.duplicate('HandCtrl_SWTC_L')
+    tempName = cmds.duplicate(baseHandCtrlName + '_L')
     cmds.rename(tempName, ctrlName)
     cmds.select(ctrlName, r=True)
     cmds.scale(-1, 1, 1)
 
-    cmds.move(45, 0, -50, 'HandCtrl_SWTC_L')
-    bbdsLib.freezeAndDeletehistory('HandCtrl_SWTC_L')
+    cmds.move(45, 0, -50, baseHandCtrlName +'_L')
+    HToolsLib.freezeAndDeletehistory(baseHandCtrlName + '_L')
 
-    cmds.move(-45, 0, -50, 'HandCtrl_SWTC_R')
-    bbdsLib.freezeAndDeletehistory('HandCtrl_SWTC_R')
+    cmds.move(-45, 0, -50, baseHandCtrlName + '_R')
+    HToolsLib.freezeAndDeletehistory(baseHandCtrlName + '_R')
 
-    cmds.select('HandCtrl_SWTC_L', r=True)
+    cmds.select(baseHandCtrlName + '_L', r=True)
     cmds.transformLimits(etz=(True, True), tz=(0, 1))
 
-    cmds.select('HandCtrl_SWTC_R', r=True)
+    cmds.select(baseHandCtrlName + '_R', r=True)
     cmds.transformLimits(etz=(True, True), tz=(0, 1))
 
 
     #LegSwitcherの作成
-    ctrlName = 'LegCtrl_SWTC_L'
+    baseLegCtrlName = 'footCtrl_SWTC'
+    ctrlName = baseLegCtrlName + '_L'
     allController.append(ctrlName)
 
     tempName = cmds.curve(d=1, p=[(-7, 0, -9), (-7, 0, -5.8), (-6, 0, -5.8), 
@@ -216,34 +253,34 @@ def createFKIKSwitch():
                                   (0.8, 0, -8.5), (-7, 0, -9)], 
                                k=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28])
 
-    bbdsLib.renameAndColor(tempName, ctrlName, 16)
+    HToolsLib.renameAndColor(tempName, ctrlName, 16)
 
 
-    ctrlName = 'LegCtrl_SWTC_R'
+    ctrlName = baseLegCtrlName + '_R'
     allController.append(ctrlName)
 
-    tempName = cmds.duplicate('LegCtrl_SWTC_L')
+    tempName = cmds.duplicate(baseLegCtrlName + '_L')
     cmds.rename(tempName, ctrlName)
     cmds.select(ctrlName, r=True)
     cmds.scale(-1, 1, 1)
 
-    cmds.move(45, 0, -20, 'LegCtrl_SWTC_L')
-    cmds.select('LegCtrl_SWTC_L')
-    bbdsLib.freezeAndDeletehistory()
+    cmds.move(45, 0, -20, baseLegCtrlName + '_L')
+    cmds.select(baseLegCtrlName + '_L')
+    HToolsLib.freezeAndDeletehistory()
 
-    cmds.move(-45, 0, -20, 'LegCtrl_SWTC_R')
-    cmds.select('LegCtrl_SWTC_R')
-    bbdsLib.freezeAndDeletehistory()
+    cmds.move(-45, 0, -20, baseLegCtrlName + '_R')
+    cmds.select(baseLegCtrlName + '_R')
+    HToolsLib.freezeAndDeletehistory()
 
     #↓なんであるのか覚えてない、要らなくない？
     #cmds.select(ctrlName, r=True)
     #cmds.transformLimits(tz=(-50, 50))
     #cmds.transformLimits(etz=(True, True))
 
-    cmds.select('LegCtrl_SWTC_L', r=True)
+    cmds.select(baseLegCtrlName + '_L', r=True)
     cmds.transformLimits(etz=(True, True), tz=(0, 1))
 
-    cmds.select('LegCtrl_SWTC_R', r=True)
+    cmds.select(baseLegCtrlName + '_R', r=True)
     cmds.transformLimits(etz=(True, True), tz=(0, 1))
 
     #スイッチャーのグループ化
@@ -257,19 +294,22 @@ def createFKIKSwitch():
 
     cmds.parent('scale_OFST', 'FKIK_SWITCH_GRP')
 
-    bbdsLib.setKeyAbleTRS('scale_OFST', 1, 1, 1)
+    #1モノによって数値を変える必要あり
+    cmds.scale(ctlScale, ctlScale, ctlScale, 'FKIK_SWITCH_GRP')
 
-    bbdsLib.setKeyAbleTRS('curve_FK', 1, 1, 1)
-    bbdsLib.setKeyAbleTRS('curve_IK', 1, 1, 1)
-    bbdsLib.setKeyAbleTRS('HandCtrl_SWTC_L', 0, 1, 1)
-    bbdsLib.setKeyAbleTRS('HandCtrl_SWTC_R', 0, 1, 1)
-    bbdsLib.setKeyAbleTRS('LegCtrl_SWTC_L', 0, 1, 1)
-    bbdsLib.setKeyAbleTRS('LegCtrl_SWTC_R', 0, 1, 1)
+    HToolsLib.setKeyAbleTRS('scale_OFST', 1, 1, 1)
 
-    bbdsLib.setKeyAbleT('HandCtrl_SWTC_L', 1, 1, 0)
-    bbdsLib.setKeyAbleT('HandCtrl_SWTC_R', 1, 1, 0)
-    bbdsLib.setKeyAbleT('LegCtrl_SWTC_L', 1, 1, 0)
-    bbdsLib.setKeyAbleT('LegCtrl_SWTC_R', 1, 1, 0)
+    HToolsLib.setKeyAbleTRS('curve_FK', 1, 1, 1)
+    HToolsLib.setKeyAbleTRS('curve_IK', 1, 1, 1)
+    HToolsLib.setKeyAbleTRS(baseHandCtrlName + '_L', 0, 1, 1)
+    HToolsLib.setKeyAbleTRS(baseHandCtrlName + '_R', 0, 1, 1)
+    HToolsLib.setKeyAbleTRS(baseLegCtrlName + '_L', 0, 1, 1)
+    HToolsLib.setKeyAbleTRS(baseLegCtrlName + '_R', 0, 1, 1)
+
+    HToolsLib.setKeyAbleT(baseHandCtrlName + '_L', 1, 1, 0)
+    HToolsLib.setKeyAbleT(baseHandCtrlName + '_R', 1, 1, 0)
+    HToolsLib.setKeyAbleT(baseLegCtrlName + '_L', 1, 1, 0)
+    HToolsLib.setKeyAbleT(baseLegCtrlName + '_R', 1, 1, 0)
     
     #↓このままではシェイプいじらないといけない
     #cmds.setAttr('curve_FK.overrideEnabled', 1)
