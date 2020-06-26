@@ -189,6 +189,32 @@ def checkNamespace():
     else:
         print('It has no NameSpace.')
 
+def dupulicateJoint(jointName, FKIKtype, NameSpace = None):
+    tempDupNames = cmds.duplicate(jointName)
+    cmds.parent(tempDupNames[0], w=True)
+
+    cmds.select(cl=True)
+    if not NameSpace:
+        cmds.select(jointName, hi=True)
+        originalJointNames = cmds.ls(sl=True)
+        cmds.select(cl=True)
+        #print(1)
+    else:
+        originalJointNames = tempDupNames
+
+    newJoints = []
+
+    i = 0
+    for oldName in tempDupNames:
+        newName = FKIKtype + '_' + originalJointNames[i]
+        newJoints.append(newName)
+        cmds.rename(oldName, newName)
+
+        i+=1
+
+    #print(newJoints)
+
+    return newJoints
 #形状は別のスクリプトにしようかな
 ##移植済み
 
