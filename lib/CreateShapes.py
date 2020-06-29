@@ -130,7 +130,7 @@ def sphere(shapeName):
 
     return topNodeName
 
-def createCandyLike():
+def candyLike():
     cmds.curve(d=1, p=[(0, 0, 0), (-2, 0, 0), (-2.292893, 0, 0.707107),
 								(-3, 0, 1), (-3.707107, 0, 0.707107), (-4, 0, 0),
 								(-3.707107, 0, -0.707107), (-3, 0, -1),
