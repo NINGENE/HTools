@@ -102,13 +102,13 @@ def gear():
 
     return tempName[0]
 
-def sphere(shapeName):
+def sphere(shapeName, color=22):
     CIRCLE_ODER = ('A', 'B', 'C')
     topNodeName = ''
     for i in range(1, 4):
         ctrlName = shapeName + CIRCLE_ODER[i-1]
         tempName = cmds.circle(c=(0, 0, 0), nr=(0, 1, 0), sw=360, r=1, d=3, ut=False, s=8, ch=True)
-        HToolsLib.renameAndColor(tempName[0], ctrlName, 22)
+        HToolsLib.renameAndColor(tempName[0], ctrlName, color)
         cmds.select(ctrlName, r=True)
         if i == 1:
             topNodeName = ctrlName
