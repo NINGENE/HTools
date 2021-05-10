@@ -16,32 +16,33 @@ def callShape(shapeNumber):
         print('There is no number for choosing the shape.')
     
     elif shapeNumber == 1:
-        linerCircle()
+        tempName = linerCircle()
     
     elif shapeNumber == 2:
-        ototsuCircle()
+        tempName = ototsuCircle()
 
     elif shapeNumber == 3:
-        cross()
+        tempName = cross()
 
     elif shapeNumber == 4:
-        arrowCross()
+        tempName = arrowCross()
 
     elif shapeNumber == 5:
-        box()
+        tempName = box()
 
     elif shapeNumber == 6:
-        pyramid()
+        tempName = pyramid()
 
     elif shapeNumber == 7:
-        gear()
+        tempName = gear()
 
     elif shapeNumber == 8:
-        sphere()
+        tempName = sphere(shapeName, color=22)
 
     elif shapeNumber == 9:
-        candyLike()
+        tempName = candyLike()
 
+    return tempName
     
 def linerCircle():
 	#ルートコントローラー作成（円）
