@@ -119,15 +119,16 @@ def renameAndColorV2(oldName, newName, color):
 def creatOffset(osName, crName, jointName, isParent=True):
     cmds.group(n=osName, w=True, em=True)
     cmds.parent(crName, osName)
-
-    if isParent:
-        cmds.parentConstraint(jointName, osName)
-        cmds.select(osName, r=True)
-        cmds.delete(cn=True)
-    else:
-        cmds.pointConstraint(jointName, osName)
-        cmds.select(osName, r=True)
-        cmds.delete(cn=True)        
+    
+    if cmds.objExists(jointName):
+        if isParent:
+            cmds.parentConstraint(jointName, osName)
+            cmds.select(osName, r=True)
+            cmds.delete(cn=True)
+        else:
+            cmds.pointConstraint(jointName, osName)
+            cmds.select(osName, r=True)
+            cmds.delete(cn=True)        
 	
 def freezeAndDeletehistory(node=None):
     if node:
