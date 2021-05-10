@@ -11,6 +11,38 @@ reload(HToolsLib)
 Nurbusシェイプを生成するライブラリにすることを目的とする
 '''
 
+def callShape(shapeNumber):
+    if not shapeNumber:
+        print('There is no number for choosing the shape.')
+    
+    elif shapeNumber == 1:
+        linerCircle()
+    
+    elif shapeNumber == 2:
+        ototsuCircle()
+
+    elif shapeNumber == 3:
+        cross()
+
+    elif shapeNumber == 4:
+        arrowCross()
+
+    elif shapeNumber == 5:
+        box()
+
+    elif shapeNumber == 6:
+        pyramid()
+
+    elif shapeNumber == 7:
+        gear()
+
+    elif shapeNumber == 8:
+        sphere()
+
+    elif shapeNumber == 9:
+        candyLike()
+
+    
 def linerCircle():
 	#ルートコントローラー作成（円）
     tempName = cmds.curve(d=1, p=[(0, 0, -1), (-0.195, 0, -0.981), (-0.383, 0, -0.924),
