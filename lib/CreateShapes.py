@@ -10,8 +10,11 @@ reload(HToolsLib)
 概要
 Nurbusシェイプを生成するライブラリにすることを目的とする
 '''
+shapeDict = {'linierCircle':1, 'ototsuCircle':2, 'cross':3,
+             'arrowCross':4, 'box':5, 'pyramid':6, 
+             'gear':7, 'sphere':8, 'candyLike':9}
 
-def callShape(shapeNumber):
+def callShape(shapeNumber, shapeName=''):
     if not shapeNumber:
         print('There is no number for choosing the shape.')
     
