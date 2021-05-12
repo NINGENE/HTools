@@ -44,6 +44,7 @@ class BaseController():
         self.primJntName   = primJointName
         self.pos           = pos
         self.NType         = nodeType
+        
         self.ctrlName      = 'CTRL_' + self.primJntName + self.pos
         self.ofstName      = 'OFST_' + self.primJntName + self.pos
         self.NS            = ownNameSpaceName
@@ -67,7 +68,12 @@ class BaseController():
         self.keyR = 0
         self.keyS = 1
 
+        #self.shapeNumber = 'ototsuCircle'
+        self.shapeName   = primJointName   #今のところスフィア作るときに必要な名前
         self.shapeNumber = 2
+        self.color       = 'yellow' #colors = {'red':13, 'yellow':22, 'blue':15}
+
+        self.rootParent = ''
 
     def resetJointName(self, newJointName):
         self.primJntName   = newJointName
@@ -89,9 +95,9 @@ class BaseController():
 
 class ControllerCreator(BaseController):
     
-    def createControllers(self, tempName, color='yellow'):
+    def createControllers(self, tempName):
 
-        HToolsLib.renameAndColorV2(tempName, self.ctrlName, color)
+        HToolsLib.renameAndColorV2(tempName, self.ctrlName, self.color)
         HToolsLib.creatOffset(self.ofstName, self.ctrlName, self.jointName)
 
         dstName = self.ofstName
@@ -114,17 +120,34 @@ class ControllerCreator(BaseController):
         driven = self.jointName
         cmds.parentConstraint(driver, driven, mo=True)
 
+#基本的な関数
+
+#単純なFKの作りのものはこれで対応できる気がするので、後で整頓する
+#鳴神などの複数しっぽあるタイプはそのままは利用出来ない（鳴神は単純にこれを回数やるだけでいいかも）
 def createSimpleController(controllerInfo):
     CInfo = controllerInfo
 
-    tempName = CreateShapes.callShape(CInfo.shapeNumber)
+    tempName = CreateShapes.callShape(CInfo.shapeNumber, CInfo.shapeName, CInfo.color) 
+    #tempName = CreateShapes.callShape(CreateShapes.shapeDict[CInfo.shapeNumber])
     CInfo.createControllers(tempName)
     CInfo.setRotate()
     CInfo.setScale()
     HToolsLib.setKeyAble(CInfo.ctrlName, CInfo.keyT, CInfo.keyR, CInfo.keyS)
 
-#基本的な関数
+def createFKChain(controllerInfoList):
+    CInfoList = controllerInfoList
+
+    for CInfo in CInfoList:
+        createSimpleController(CInfo)
+
+    for i in range(1, len(CInfoList)):
+        CInfoList[i].parentController(CInfoList[i-1].ctrlName)
+
+    for fk in CInfoList:
+        fk.constraintController()
+
 def simpleFKChain(joints, controllerInfo):
+    #ちとこのままだと汎用性が低いっぽいので、一旦上のcreateFKChainを使う
     CInfo = controllerInfo
     primJointNames = []
     if type(joints) == list:
@@ -136,13 +159,15 @@ def simpleFKChain(joints, controllerInfo):
         #リストを作る
         i = 1
         while True:
-            baseJointName = 'JNT_' + joints + '%02d' %i + '_C'
+            #baseJointName = 'JNT_' + joints + '%02d' %i + '_C'
+            baseJointName = joints + '%02d' %i + '_C'
             if cmds.objExists(baseJointName):
                 #パターン1
                 #primJointNames.append(baseJointName)
 
                 #パターン2（今までの方法を踏襲する場合こちらの方が良いかも
-                primJointNames.append('JNT_' + joints + '%02d' %i)
+                #primJointNames.append('JNT_' + joints + '%02d' %i)
+                primJointNames.append(joints + '%02d' %i)
                 i += 1
             else:
                 break
@@ -166,7 +191,6 @@ def simpleFKChain(joints, controllerInfo):
     #if parentObject:
     #    uFKChains[0].parentController(parentObject)
 
-
 #いずれはライブラリに入れたい
 def checkNamespace():
     if cmds.objExists('MODEL:root') or cmds.objExists('MODEL:Root'):
@@ -177,11 +201,37 @@ def checkNamespace():
 
     return nameSpaceName
 
-#単純なFKの作りのものはこれで対応できる気がするので、後で整頓する
-#鳴神などの複数しっぽあるタイプはそのままは利用出来ない（鳴神は単純にこれを回数やるだけでいいかも）
-#simpleFKControllerとかにするか
-#サイズの変更も出来るようにする
-#コントローラーの形状も（これはもっと親のクラスが良いかも
+def generateRootController(rootInfo, trInfo):
+
+    createSimpleController(rootInfo)
+    createSimpleController(trInfo)
+    trInfo.parentController(rootInfo.ctrlName)
+
+def hinan():
+    #CInfo.resetJointName(joint)
+    #uFKChain = copy.deepcopy(CInfo)
+    #createSimpleController(uFKChain)
+
+
+    ##ルートコントローラー作成（円）
+    rootInfo = controllerInfo01
+    #rootInfo.ctrlName = 'CTRL_Root'
+
+    tempName = CreateShapes.linerCircle()
+    HToolsLib.renameAndColorV2(tempName, ctrlName, 'red')
+    cmds.select(ctrlName, r=True)
+    HToolsLib.freezeAndDeletehistory()
+
+    ##移動コントローラーの作成（十字矢印）
+    ctrlName = 'CTRL_tr_C'
+
+    tempName = CreateShapes.arrowCross()
+    HToolsLib.renameAndColorV2(tempName, ctrlName, 'red')
+    cmds.select(ctrlName, r=True)
+    #cmds.scale(svalu, svalu, svalu)
+    HToolsLib.freezeAndDeletehistory()
+
+
 def main():
     joints = ['shoulder', 'arm', 'hand']
     #joints = 'tail'

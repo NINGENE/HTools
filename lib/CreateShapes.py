@@ -10,11 +10,11 @@ reload(HToolsLib)
 概要
 Nurbusシェイプを生成するライブラリにすることを目的とする
 '''
-shapeDict = {'linierCircle':1, 'ototsuCircle':2, 'cross':3,
+shapeDict = {'linerCircle':1, 'ototsuCircle':2, 'cross':3,
              'arrowCross':4, 'box':5, 'pyramid':6, 
              'gear':7, 'sphere':8, 'candyLike':9}
 
-def callShape(shapeNumber, shapeName=''):
+def callShape(shapeNumber, shapeName, color):
     if not shapeNumber:
         print('There is no number for choosing the shape.')
     
@@ -40,7 +40,7 @@ def callShape(shapeNumber, shapeName=''):
         tempName = gear()
 
     elif shapeNumber == 8:
-        tempName = sphere(shapeName, color=22)
+        tempName = sphere(shapeName, color)
 
     elif shapeNumber == 9:
         tempName = candyLike()
@@ -138,13 +138,13 @@ def gear():
 
     return tempName[0]
 
-def sphere(shapeName, color=22):
+def sphere(shapeName, color):
     CIRCLE_ODER = ('A', 'B', 'C')
     topNodeName = ''
     for i in range(1, 4):
         ctrlName = shapeName + CIRCLE_ODER[i-1]
         tempName = cmds.circle(c=(0, 0, 0), nr=(0, 1, 0), sw=360, r=1, d=3, ut=False, s=8, ch=True)
-        HToolsLib.renameAndColor(tempName[0], ctrlName, color)
+        HToolsLib.renameAndColorV2(tempName[0], ctrlName, color)
         cmds.select(ctrlName, r=True)
         if i == 1:
             topNodeName = ctrlName

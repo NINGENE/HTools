@@ -100,7 +100,7 @@ def renameAndColor(oldName, newName, colNum):
     cmds.rename(oldName, newName)
     if colNum == 'None':
         pass
-        #print('None')
+        print('Please input the color')
     else:
         cmds.setAttr(newName + 'Shape.overrideEnabled', True)
         cmds.setAttr(newName + 'Shape.overrideColor', colNum)
@@ -110,7 +110,7 @@ def renameAndColorV2(oldName, newName, color):
     cmds.rename(oldName, newName)
     if color == 'None':
         pass
-        #print('None')
+        print('Please input the color')
     else:
         cmds.setAttr(newName + 'Shape.overrideEnabled', True)
         cmds.setAttr(newName + 'Shape.overrideColor', colors[color])
