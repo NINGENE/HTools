@@ -195,19 +195,18 @@ def createFKIKSwitch(ctlScale = 1):
     HToolsLib.renameAndColor(tempName, ctrlName, 16)
     
 
-    ctrlName = 'curve_FK_K' #テンポラリのノードなのでappendしない
+    curveK = 'curve_FK_K' #テンポラリのノードなのでappendしない
 
     tempName = cmds.curve(d=1, p=[(5, 0, -27), (-1, 0, 25), (6, 0, 27), 
                                   (9, 0, 8), (17, 0, 25), (24, 0, 25), 
                                   (15, 0, 2), (28, 0, -15), (20, 0, -21), 
                                   (11, 0, -6), (14, 0, -26), (5, 0, -27)], 
                                k=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
+    HToolsLib.renameAndColor(tempName, curveK, 16)
 
-    HToolsLib.renameAndColor(tempName, ctrlName, 16)
-
-    cmds.parent('curve_FK_KShape', 'curve_FK', r=True, s=True)
+    cmds.parent(curveK+'Shape', 'curve_FK', r=True, s=True)
     cmds.rename('curve_FKShape', 'curve_FK_FShape')
-    cmds.delete('curve_FK_K')
+    cmds.delete(curveK)
     cmds.move(0, 0, -30, 'curve_FK', r=True)
     HToolsLib.freezeAndDeletehistory('curve_FK')
     
