@@ -113,10 +113,13 @@ class ControllerCreator(BaseController):
         child  = self.ofstName
         cmds.parent(child, parent)
         
-    def constraintController(self):
+    def constraintController(self, driver=''):
         #primJoint = 'head_C'
-        driver = self.ctrlName
-        driven = self.jointName
+        if not driver:
+            driver = self.ctrlName
+            driven = self.jointName
+        else:
+            driven = self.ofstName
         cmds.parentConstraint(driver, driven, mo=True)
 
 #基本的な関数
@@ -211,6 +214,13 @@ def generateRootController(rootInfo, trInfo):
     createSimpleController(rootInfo)
     createSimpleController(trInfo)
     trInfo.parentController(rootInfo.ctrlName)
+
+def deleteUnneceJoint(unnecessaryJoint):
+    delJoint = unnecessaryJoint
+    cmds.delete(delJoint)
+
+    print('Delete ' + delJoint + '.')
+    return delJoint
 
 def generateFKLimbs(controllerInfoList):
     #FK用ジョイントの複製とFKコントローラーの生成、FKジョイントとFKコントローラーとのコンストレイントまで一括でやる
