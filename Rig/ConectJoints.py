@@ -39,13 +39,29 @@ def main():
 
         for i in range(len(dstJoints)):
             cmds.parentConstraint(srcJoints[i], dstJoints[i])
+            #ネームスペースはずす
+            #そもそもジョイントにJNT_的なプリフィックス付けたら解決するのでは？
+            #ジョイント複製の時に同じ名前になっちゃうからネームスペースあったほうがよさそう
+            #cmds.rename(dstJoints[i] + '_parentConstraint1', 'MODEL:' + dstJoints[i] + '_parentConstraint1')
 
+        name_spase = cmds.namespace(add='For_Rig')
+        pre_fix = ':JNT_'
+
+        #humanoidのままのジョイント名でも問題ないやつは
+        #リネームでネームスペースがつかないのでリネーム前に
+        #先にネームスペースをつける
+        allForRigJoints = []
+        for joint in srcJoints:
+            newJoint = cmds.rename(joint, name_spase + pre_fix + joint)
+            allForRigJoints.append(newJoint)
+
+        #取り急ぎ、HRigでリネームしないと行けないところをリネーム
         for i in range(len(HUMANOID_JOINTS)):
-            cmds.rename(HUMANOID_JOINTS[i], forRigJoints[i])
+            cmds.rename(name_spase + pre_fix + HUMANOID_JOINTS[i], name_spase + pre_fix + forRigJoints[i])
 
         cmds.select(d=True)
-        rootJoint = cmds.joint(name = 'Root', p=(0,0,0))
-        cmds.parent(forRigJoints[0], rootJoint)
+        rootJoint = cmds.joint(name = name_spase + pre_fix + 'Root', p=(0,0,0))
+        cmds.parent(name_spase + pre_fix + forRigJoints[0], rootJoint)
         cmds.select(d=True)
     
 

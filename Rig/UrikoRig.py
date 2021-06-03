@@ -37,13 +37,13 @@ IKGRP = 'IK_GRP'
 def main():
     global nameSpaceName
     #nameSpaceName = HRigSys.checkNamespace()
-    #nameSpaceName = 'MODEL'
-    nameSpaceName = ''
-
+    nameSpaceName = 'For_Rig:'
+    pre_fix = 'JNT_'
+    
     #ルートと移動回転のコントローラー作成
     #ルートコントローラーのパラメーター
     #コントローラーだけを確実に作るようにしたいなぁ
-    cRoot = HRigSys.ControllerCreator(nameSpaceName, 'Root')
+    cRoot = HRigSys.ControllerCreator(nameSpaceName, pre_fix + 'Root')
     param=0
     while param == 0:
         cRoot.rx = 0
@@ -81,9 +81,12 @@ def main():
     #スパインコントローラーの生成
     check = True
     if check:
-        cHip = HRigSys.ControllerCreator(nameSpaceName, 'hip')
+        cHip = HRigSys.ControllerCreator(nameSpaceName, pre_fix + 'hip')
         param=0
         while param==0:
+            cHip.sx = 0.25
+            cHip.sy = 0.25
+            cHip.sz = 0.25
             cHip.shapeNumber = shapeDict['cross']
             cHip.keyT=0
             param=1
@@ -98,7 +101,10 @@ def main():
         spineNum = 2
         i=1
         while i < (spineNum + 1):
-            cSpineInfo = HRigSys.ControllerCreator(nameSpaceName, 'spine' + '%02d' %i)
+            cSpineInfo = HRigSys.ControllerCreator(nameSpaceName, pre_fix +  'spine' + '%02d' %i)
+            cSpineInfo.sx = 0.25
+            cSpineInfo.sy = 0.25
+            cSpineInfo.sz = 0.25
             spineInfos.append(cSpineInfo)
             i+=1
         HRigSys.createFKChain(spineInfos)
@@ -110,10 +116,14 @@ def main():
     #--------------------------------------------spineコントローラー終了---------------------------------------
 
     #ヘッド周りのコントローラー
+    #ネック作らないといけない
     headCheck = True
     if headCheck:
         parentController = lastSpine
-        cHead = HRigSys.ControllerCreator(nameSpaceName, 'head')
+        cHead = HRigSys.ControllerCreator(nameSpaceName, pre_fix + 'head')
+        cHead.sx = 0.25
+        cHead.sy = 0.25
+        cHead.sz = 0.25
         HRigSys.createSimpleController(cHead, isConstraint=True)
         
         cHead.parentController(parentController.ctrlName)
@@ -125,9 +135,9 @@ def main():
     check_handFK = True
     check_hand_L = True
     check_hand_R = True
-    FKHandSizeX  = 0.5
-    FKHandSizeY  = 0.5
-    FKHandSizeZ  = 0.5
+    FKHandSizeX  = 0.1
+    FKHandSizeY  = 0.1
+    FKHandSizeZ  = 0.1
     if check_handFK:
         parentController = lastSpine
         cArmFKLimbsListL = []
@@ -138,7 +148,7 @@ def main():
         for pos in positionList:
             FKLimbList = []
             for limb in limbList:
-                cLimb = HRigSys.ControllerCreator(nameSpaceName, limb, pos)
+                cLimb = HRigSys.ControllerCreator(nameSpaceName, pre_fix + limb, pos)
                 
                 cLimb.sx = FKHandSizeX #0.5
                 cLimb.sy = FKHandSizeY #0.5
@@ -165,9 +175,9 @@ def main():
     check_legFK = True
     check_leg_L = True
     check_leg_R = True
-    FKLegSizeX  = 0.5
-    FKLegSizeY  = 0.5
-    FKLegSizeZ  = 0.5
+    FKLegSizeX  = 0.1
+    FKLegSizeY  = 0.1
+    FKLegSizeZ  = 0.1
     if check_legFK:
         parentController = cHip.ctrlName
         cLegFKLimbsListL = []
@@ -178,7 +188,7 @@ def main():
         for pos in positionList:
             FKLimbList = []
             for limb in limbList:
-                cLimb = HRigSys.ControllerCreator(nameSpaceName, limb, pos)
+                cLimb = HRigSys.ControllerCreator(nameSpaceName, pre_fix + limb, pos)
                 
                 cLimb.sx = FKLegSizeX
                 cLimb.sy = FKLegSizeY
@@ -216,11 +226,11 @@ def main():
             if not pos == '_L':
                 rotX = -90
             #shoulder
-            cIKLimb = HRigSys.ControllerCreator(nameSpaceName, limbList[0], pos)
+            cIKLimb = HRigSys.ControllerCreator(nameSpaceName, pre_fix + limbList[0], pos)
             IKLimbList.append(cIKLimb)
 
             #arm
-            cIKLimb = HRigSys.ControllerCreator(nameSpaceName, limbList[1], pos)
+            cIKLimb = HRigSys.ControllerCreator(nameSpaceName, pre_fix + limbList[1], pos)
 
             cIKLimb.tx = 0
             cIKLimb.ty = 0
@@ -228,23 +238,23 @@ def main():
             cIKLimb.rx = rotX
             cIKLimb.ry = 0
             cIKLimb.rz = 0
-            cIKLimb.sx = 0.25
-            cIKLimb.sy = 0.25
-            cIKLimb.sz = 0.25
+            cIKLimb.sx = 0.1
+            cIKLimb.sy = 0.1
+            cIKLimb.sz = 0.1
             cIKLimb.keyT = 0
             cIKLimb.keyR = 1
             cIKLimb.shapeNumber = shapeDict['pyramid']
 
             IKLimbList.append(cIKLimb)
             #hand
-            cIKLimb = HRigSys.ControllerCreator(nameSpaceName, limbList[2], pos)
+            cIKLimb = HRigSys.ControllerCreator(nameSpaceName, pre_fix + limbList[2], pos)
 
             cIKLimb.rx = 0
             cIKLimb.ry = 0
             cIKLimb.rz = 0
-            cIKLimb.sx = 1
-            cIKLimb.sy = 1
-            cIKLimb.sz = 1
+            cIKLimb.sx = 0.25
+            cIKLimb.sy = 0.25
+            cIKLimb.sz = 0.25
             cIKLimb.keyT = 0
             cIKLimb.shapeNumber = shapeDict['box']
 
@@ -272,11 +282,11 @@ def main():
             if not pos == '_L':
                 rotX = -90
             #shoulder
-            cIKLimb = HRigSys.ControllerCreator(nameSpaceName, limbList[0], pos)
+            cIKLimb = HRigSys.ControllerCreator(nameSpaceName, pre_fix + limbList[0], pos)
             IKLimbList.append(cIKLimb)
 
             #arm
-            cIKLimb = HRigSys.ControllerCreator(nameSpaceName, limbList[1], pos)
+            cIKLimb = HRigSys.ControllerCreator(nameSpaceName, pre_fix + limbList[1], pos)
 
             cIKLimb.tx = 0
             cIKLimb.ty = 0
@@ -284,16 +294,16 @@ def main():
             cIKLimb.rx = rotX
             cIKLimb.ry = 0
             cIKLimb.rz = 0
-            cIKLimb.sx = 0.15
-            cIKLimb.sy = 0.15
-            cIKLimb.sz = 0.15
+            cIKLimb.sx = 0.1
+            cIKLimb.sy = 0.1
+            cIKLimb.sz = 0.1
             cIKLimb.keyT = 0
             cIKLimb.keyR = 1
             cIKLimb.shapeNumber = shapeDict['pyramid']
 
             IKLimbList.append(cIKLimb)
             #hand
-            cIKLimb = HRigSys.ControllerCreator(nameSpaceName, limbList[2], pos)
+            cIKLimb = HRigSys.ControllerCreator(nameSpaceName, pre_fix + limbList[2], pos)
 
             cIKLimb.rx = 0
             cIKLimb.ry = 0
@@ -314,7 +324,7 @@ def main():
                 HRigSys.generateIKLimbs(cLegIKLimbsListR)
     #-------------------------------------IKコントローラー作成終了--------------------
 
-    HRigSys.generateSwitch(pos = [4, 6, 0])
+    HRigSys.generateSwitch(pos = [2, 2, 0])
 
     if check_hand_L:
         HRigSys.setLimbsFKSwitch(cArmFKLimbsListL, 'handCtrl_SWTC')
