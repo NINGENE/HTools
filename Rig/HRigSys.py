@@ -129,7 +129,7 @@ class ControllerCreator(BaseController):
 def createSimpleController(controllerInfo, isConstraint = False):
     CInfo = controllerInfo
 
-    tempName = CreateShapes.callShape(CInfo.shapeNumber, CInfo.shapeName, CInfo.color) 
+    tempName = CreateShapes.callShape(CInfo.shapeNumber, CInfo.shapeName, CInfo.color, CInfo.pos) 
     #tempName = CreateShapes.callShape(CreateShapes.shapeDict[CInfo.shapeNumber])
     CInfo.createControllers(tempName)
     CInfo.setRotate()
