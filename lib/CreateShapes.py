@@ -14,7 +14,7 @@ shapeDict = {'linerCircle':1, 'ototsuCircle':2, 'cross':3,
              'arrowCross':4, 'box':5, 'pyramid':6, 
              'gear':7, 'sphere':8, 'candyLike':9}
 
-def callShape(shapeNumber, shapeName, color):
+def callShape(shapeNumber, shapeName, color, pos=''):
     if not shapeNumber:
         print('There is no number for choosing the shape.')
     
@@ -40,7 +40,7 @@ def callShape(shapeNumber, shapeName, color):
         tempName = gear()
 
     elif shapeNumber == 8:
-        tempName = sphere(shapeName, color)
+        tempName = sphere(shapeName, color, pos)
 
     elif shapeNumber == 9:
         tempName = candyLike()
@@ -138,11 +138,13 @@ def gear():
 
     return tempName[0]
 
-def sphere(shapeName, color):
+def sphere(shapeName, color, pos=''):
     CIRCLE_ODER = ('A', 'B', 'C')
     topNodeName = ''
+    if pos:
+        pos = pos +'_'
     for i in range(1, 4):
-        ctrlName = shapeName + CIRCLE_ODER[i-1]
+        ctrlName = shapeName + pos + CIRCLE_ODER[i-1]
         tempName = cmds.circle(c=(0, 0, 0), nr=(0, 1, 0), sw=360, r=1, d=3, ut=False, s=8, ch=True)
         HToolsLib.renameAndColorV2(tempName[0], ctrlName, color)
         cmds.select(ctrlName, r=True)
