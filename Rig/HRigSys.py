@@ -308,7 +308,8 @@ def generateSwitch(pos = [4, 4, 0]):
 
 def setLimbsFKSwitch(controllerInfoList, switch):
     CInfoList = controllerInfoList
-    switchName = switch + CInfoList[2].pos  #左右が取れればいいのでどこでもいいし何でもいい
+    #switchName = switch + CInfoList[2].pos  #左右が取れればいいのでどこでもいいし何でもいい
+    switchName = switch #猫又のFL問題が在ったので、ここでLR取るんじゃなくて外でスイッチ名指定しちゃう
     reverseName = 'rev' + CInfoList[2].primJntName + 'FK' + CInfoList[2].pos
 
     tempNodeName = cmds.shadingNode('reverse', asUtility=True)
@@ -331,7 +332,9 @@ def setLimbsFKSwitch(controllerInfoList, switch):
 
 def setLimbsIKSwitch(controllerInfoList, switch):
     CInfoList = controllerInfoList
-    switchName = switch + CInfoList[2].pos  #左右が取れればいいのでどこでもいいし何でもいい
+    #switchName = switch + CInfoList[2].pos  #左右が取れればいいのでどこでもいいし何でもいい
+    switchName = switch #猫又のFL問題が在ったので、ここでLR取るんじゃなくて外でスイッチ名指定しちゃう
+
     for limb in CInfoList:
         #ベイクジョイントとIK操作ジョイントのコンストレイント
         srcJoint = limb.jointName #'IK_' + limb + pos
@@ -387,6 +390,7 @@ def parentIKController(controllerInfo, groupName):
 def createIKGroup():
     #IKの名前も保存出来るようにしたいねぇ
     #腕や足が無かった場合引っかかるのでとりあえずobjExist入れた
+    #猫又のFL、FR系がこれだと反応しないのでおいおい考える
     LRList = ('_L', '_R')
     IKs = ('hand', 'foot')
     IKGroup = cmds.group(w=True, em=True, n='IK_GRP')
