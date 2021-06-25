@@ -14,8 +14,33 @@ reload(CreateShapes)
 #└引数が増えるのが嫌なのでクラスに纏める的発想
 #最終的にCUIの方ではこのクラスを書き換えるのをメインとする感じで
 
+
+
+shapeDict = {'linerCircle':1, 'ototsuCircle':2, 'cross':3,
+             'arrowCross':4, 'box':5, 'pyramid':6, 
+             'gear':7, 'sphere':8, 'candyLike':9}
+
+class Shapes():
+    def __init__(self):
+        self.liner_circle  = shapeDict['linerCircle']
+        self.ototsu_circle = shapeDict['ototsuCircle']
+        self.cross         = shapeDict['cross']
+        self.arrow_cross   = shapeDict['arrowCross']
+        self.box           = shapeDict['box']
+        self.pyramid       = shapeDict['pyramid']
+        self.gear          = shapeDict['gear']
+        self.sphere        = shapeDict['sphere']
+        self.candylike     = shapeDict['candyLike']
+
+class Colors():
+    def __init__(self):
+        self.red    = 'red'
+        self.yellow = 'yellow'
+        self.blue   = 'blue'
 #↓これをまるっと引数で渡せばいいようにしたい
 #継承とか上手くいかなかったのでいったん下のBaseControllerに機能を譲る(21/5/10現在)
+#上の話はなんか違う気がしてきた
+
 class HTransfrom(object):
     def __init__(self):
         self.name = 'test_joint_name'
@@ -247,6 +272,7 @@ def generateIKLimbs(controllerInfoList):
 
     createSimpleController(CInfoList[1])
 
+    #なんかここクラス使ってるのに移動のさせ方何とかならんのか？
     cmds.select(CInfoList[1].ofstName)
     cmds.move(CInfoList[1].tx, CInfoList[1].ty, CInfoList[1].tz, r=True, wd=True)
 
@@ -295,6 +321,248 @@ def generateIKLimbs(controllerInfoList):
 
  
  #どうまとめるか考えるけどとりあえずここで機能確認
+
+class DogLegIK():
+    def __init__(self, name_space, prim_dup_joints):
+        self.name_space_name = name_space
+        self.prim_limbs = prim_dup_joints
+        self.prim_joint = prim_dup_joints[0]    #コピーするジョイントのルートジョイント　基本hipが入っている
+    
+    def make_dog_leg_rig(self,
+        hip_ctrl_size=[1.5, 1, 1],
+        prim_joint_name = 'hip',
+        ik_box_size = [1, 1, 1],
+        pv_size = [0.2, 0.2, 0.2],
+        pv_pos = 2,
+        position_list = ['_L', '_R']):
+
+        print(self.prim_joint)
+        for pos in position_list:
+            name_space_name = self.name_space_name
+            base_dup_joint  = name_space_name + self.prim_joint + pos
+            kinema          = 'IK'
+
+            #1. アッタチするための階層が綺麗なジョイントの作成（ベースジョイント）
+            dupList = HToolsLib.dupulicateJoint(base_dup_joint, kinema, name_space_name)
+            #コピーしたジョイントをリネーム
+            IKBaseJoints = []
+            for tempJoint in dupList:
+                cmds.rename(tempJoint, 'Base_' + tempJoint)
+                IKBaseJoints.append('Base_' + tempJoint)
+
+            #2. 4本をまとめて動かすジョイントの作成（名前考え中）
+            dupList = HToolsLib.dupulicateJoint(base_dup_joint, kinema, name_space_name)
+            #コピーしたジョイントをリネーム
+            topHieralkyJoints = []
+            for tempJoint in dupList:
+                cmds.rename(tempJoint, 'Top_' + tempJoint)
+                topHieralkyJoints.append('Top_' + tempJoint)
+
+            #3. 上の奴（名前考え中）にIK通す
+            topIK = cmds.ikHandle(n='top_IK_foot' + pos, sol='ikRPsolver', sj=topHieralkyJoints[0], ee=topHieralkyJoints[3])	#example of IK name 'aim_front_IK_L'
+            cmds.setAttr(topIK[0] + '.visibility', 0)
+
+            #4. 太もも調整用のジョイントを作成（上下でセパレートしたやつ）
+            #4-1. 上側
+            dupList = HToolsLib.dupulicateJoint(base_dup_joint, kinema, name_space_name)
+            upJoints = []
+            i=0
+            for tempJoint in dupList:
+                if i < 2:
+                    cmds.rename(tempJoint, 'Up_' + tempJoint)
+                    upJoints.append('Up_' + tempJoint)
+                else:
+                    cmds.delete(tempJoint)
+                    break
+                i+=1
+
+            #4-2. 下側
+            dupList = HToolsLib.dupulicateJoint(base_dup_joint, kinema, name_space_name)
+            downJoints = []
+            for tempJoint in dupList:
+                cmds.rename(tempJoint, 'Down_' + tempJoint)
+                downJoints.append('Down_' + tempJoint)
+            
+            cmds.parent(downJoints[1], w=True)
+            cmds.delete(downJoints[0])
+            
+            #5. 上下でセパレートしたやつジョイントにIKを通す
+            downIK = cmds.ikHandle(n='down_IK_foot' + pos, sol='ikRPsolver', sj=downJoints[1], ee=downJoints[3])	#example of IK name 'aim_front_IK_L'
+            cmds.setAttr(downIK[0] + '.visibility', 0)
+
+            #6. upとdownをコンストレイント
+            cmds.pointConstraint(upJoints[1], downJoints[1])
+            
+            #7. 名前考え中と上下でセパレートしやつをコネクト（子になるのは上下でセパレートしたやつ）
+            #太もも用のコントローラーの作成
+            ###ここはあとで外に出す？CUIに記載されている部分を一先ず動かすためにここに書いている
+            c_hip = ControllerCreator(name_space_name, prim_joint_name, pos)
+            #c_hip = HRigSys.ControllerCreator(nameSpaceName, prim_joint_name, pos)
+            c_hip.ctrlName = 'CTRL_IK_' + prim_joint_name + pos
+            c_hip.ofstName = 'OFST_IK_' + prim_joint_name + pos
+            c_hip.sx = hip_ctrl_size[0]
+            c_hip.sy = hip_ctrl_size[1]
+            c_hip.sz = hip_ctrl_size[2]
+            c_hip.shapeNumber = 5   #shapeDict['box']
+
+            ###ここまでがCUIで書いている部分、こっちにそのまま残してもいいかも
+
+            createSimpleController(c_hip)
+
+            cmds.parentConstraint(topHieralkyJoints[0], c_hip.ofstName)
+            cmds.parentConstraint(c_hip.ctrlName, upJoints[0])
+
+            #8. ベースジョイントを上下セパの子にする
+            cmds.parentConstraint(upJoints[0], IKBaseJoints[0])
+            numOfJoint = len(IKBaseJoints)
+            i = 1
+            while i < numOfJoint:
+                cmds.parentConstraint(downJoints[i], IKBaseJoints[i])
+                i+=1
+
+            #9. footのIKコントローラー作成（IK自体は仕込まない）
+            #普通のlegと一緒にしたいなぁ
+            ###ここはCUI部分
+            #c_foot = HRigSys.ControllerCreator(nameSpaceName, 'IK_foot', pos)
+            c_foot = ControllerCreator(name_space_name, 'IK_foot', pos)
+            c_foot.jointName = 'Base_IK_foot' + pos
+            c_foot.sx = ik_box_size[0]
+            c_foot.sy = ik_box_size[1]
+            c_foot.sz = ik_box_size[2]
+            c_foot.keyT = 0
+            c_foot.shapeNumber = 5   #shapeDict['box']
+            ###CUI部分ここまで
+            createSimpleController(c_foot)
+
+            #10. ポールベクター作成
+            vecZPos = pv_pos
+            if pos == '_L':
+                vecXRot = 90
+            else:
+                vecXRot = -90    
+            ###ここが必要か良く分からない
+            isPositive = True
+            if isPositive:
+                pass
+            else:
+                vecZPos *= -1
+                vecXRot *= -1
+            ###ここまで
+            
+            ##creating IK Pole vector controller. 
+            c_pv = ControllerCreator(name_space_name, IKBaseJoints[1], pos)
+            c_pv.jointName = IKBaseJoints[1]
+            c_pv.ctrlName = 'CTRL_leg_TW' + pos
+            c_pv.ofstName = 'OFST_leg_TW' + pos
+            c_pv.tx = 0
+            c_pv.ty = 0
+            c_pv.tz = vecZPos
+            c_pv.rx = vecXRot
+            c_pv.ry = 0
+            c_pv.rz = 0
+            c_pv.sx = pv_size[0]
+            c_pv.sy = pv_size[1]
+            c_pv.sz = pv_size[2]
+            c_pv.keyT = 0
+            c_pv.keyR = 1
+            c_pv.shapeNumber = 6 #shapeDict['pyramid']
+            
+            createSimpleController(c_pv)
+            #ここもなんかここクラス使ってるのに移動のさせ方何とかならんのか？
+            cmds.select(c_pv.ofstName)
+            cmds.move(c_pv.tx, c_pv.ty, c_pv.tz, r=True, wd=True)
+
+
+            self.parentDogLeg(pos)
+
+            self.constDogLegIK(pos)
+
+
+    def parentDogLeg(self, pos):
+        ikCtrlName = 'footIK_CTRL_GRP'
+        if not cmds.objExists(ikCtrlName):
+            cmds.group(w=True, em=True, n=ikCtrlName)
+
+        cmds.parent('OFST_IK_foot' + pos, ikCtrlName)
+        cmds.parent('OFST_leg_TW' + pos, ikCtrlName)
+
+        cmds.parent('OFST_IK_hip' + pos, 'footIK_CTRL_GRP')
+        HToolsLib.setKeyAble('OFST_IK_hip' + pos, 1, 0, 1)
+
+        IKGroupName = 'DogLegIK_GRP'
+        if not cmds.objExists(IKGroupName):
+            cmds.group(w=True, em=True, n=IKGroupName)
+
+        cmds.parent('top_IK_foot' + pos, IKGroupName)
+        cmds.parent('down_IK_foot' + pos, IKGroupName)
+
+        jointGroupName = 'legsFKIK_JNT_GRP'
+        if not cmds.objExists(jointGroupName):
+            cmds.group(w=True, em=True, n=jointGroupName)
+
+        #cmds.parent('thigh_JNT_FK' + pos, jointGroupName)
+        cmds.parent('Base_IK_hip' + pos, jointGroupName)
+        cmds.parent('Up_IK_hip' + pos, jointGroupName)
+        cmds.parent('Down_IK_thigh' + pos, jointGroupName)
+
+        cmds.parent('Top_IK_hip' + pos, 'CTRL_hip_C')#お尻振った時にthighコントローラーが付いてくるように
+
+
+    def constDogLegIK(self, pos):
+        ctrlName   = 'CTRL_IK_foot' + pos
+        topIKName  = 'top_IK_foot' + pos
+        downIKName = 'down_IK_foot' + pos
+
+        cmds.pointConstraint(ctrlName, topIKName, mo=True)
+        cmds.pointConstraint(ctrlName, downIKName, mo=True)
+
+        srcCTRL = 'CTRL_IK_foot' + pos
+        dstJNT  = 'Down_IK_foot' + pos
+        cmds.orientConstraint(srcCTRL, dstJNT, mo=True)
+
+
+
+        #これは関数にまとめていいのではないでしょうか
+        #だめっぽいです
+        TWName       = 'CTRL_leg_TW' + pos
+        topTwistAtt  = topIKName + '.twist'
+        downTwistAtt = downIKName + '.twist'
+
+        tempNodeName = cmds.shadingNode('multiplyDivide', asUtility=True)
+        tweakTwist = cmds.rename(tempNodeName, 'MD4LegTwist')
+        cmds.connectAttr(TWName + '.translateX', tweakTwist + '.input1X', f=True)
+        cmds.connectAttr(tweakTwist + '.outputX', topTwistAtt, f=True)
+        cmds.connectAttr(tweakTwist + '.outputX', downTwistAtt, f=True)
+        cmds.setAttr(tweakTwist + '.input2X', 25)#もともと0.25だけど単位がメーターなので100倍している
+
+
+    def setDogLegIKSwitch(self, pos):
+        switchName = 'footCtrl_SWTC' + pos
+
+        for joint in self.prim_limbs:
+            #ベイクジョイントとIK操作ジョイントのコンストレイント
+            srcJoint = 'Base_IK_' + joint + pos
+            dstJoint = 'MODEL:' + joint + pos
+            cmds.parentConstraint(srcJoint, dstJoint, mo=True)
+
+            #スウィッチの数値をウェイトと繋げる
+            constWeight = joint + pos + '_parentConstraint1.' + 'Base_IK_' + joint + pos + 'W1'
+
+            cmds.connectAttr(switchName + '.translateZ', constWeight, f=True)
+
+        #スイッチの数値とコントローラーの表示に繋げる
+        ctrlVisibilities = ('CTRL_IK_hip' + pos, 'CTRL_IK_foot' + pos, 'CTRL_leg_TW' + pos)
+        for vis in ctrlVisibilities:
+            cmds.connectAttr(switchName + '.translateZ', vis + '.visibility', f=True)
+        
+    
+    def array_nodes(self):
+        legsGroup = 'footIK_CTRL_GRP'
+        cmds.parent(legsGroup, 'CTRL_tr_C')
+
+        cmds.parent('legsFKIK_JNT_GRP', 'CTRL_hip_C')
+        
+        cmds.parent('DogLegIK_GRP', 'CTRL_tr_C')
 
 def generateSwitch(pos = [4, 4, 0]): 
     test = True
