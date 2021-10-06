@@ -258,11 +258,24 @@ def generateFKLimbs(controllerInfoList):
     createFKChain(CInfoList)
 
 def generateIKLimbs(controllerInfoList):
+        
     #IKジョイントの複製
     CInfoList = controllerInfoList
     dupList = HToolsLib.dupulicateJoint(CInfoList[0].jointName, 'IK', CInfoList[0].NS)
     #IK通すためにCInfoリストのジョイントネームを書き換えておく
     CInfoList[0].jointName = dupList[0]
+
+    #複製したIKジョイントからローカル回転用のハンドジョイントの複製
+    prim_local_rot_joint_name = 'IK_' + CInfoList[2].primJntName + '_local'
+    local_rot_joint = cmds.duplicate(dupList[2])  #順当に行けば2番はHandだと思うけどちょっと怖い
+    #ウェポンジョイント等は邪魔なので子をリストアップして削除
+    del_joints = cmds.listRelatives(local_rot_joint[0], fullPath=True)
+    if del_joints:
+        for joint in del_joints:
+            cmds.delete(joint)
+            print('Deleted ' + str(del_joints))
+        
+    local_rot_joint = cmds.rename(local_rot_joint[0], prim_local_rot_joint_name + CInfoList[2].pos)
 
     #コントローラーの生成
     #creating IK Pole vector controller. 
@@ -283,14 +296,30 @@ def generateIKLimbs(controllerInfoList):
 
     createSimpleController(CInfoList[2])
 
+    #creating IK local rotation controller.
+    ctrl_local_controller = ControllerCreator(CInfoList[2].NS, prim_local_rot_joint_name, CInfoList[2].pos)
+
+    ctrl_local_controller.sx = CInfoList[2].sx * 1.25
+    ctrl_local_controller.sy = CInfoList[2].sy * 1.25
+    ctrl_local_controller.sz = CInfoList[2].sz * 1.25
+    ctrl_local_controller.shapeNumber = shapeDict['linerCircle']
+
+    ctrl_local_controller.jointName = prim_local_rot_joint_name + CInfoList[2].pos
+    createSimpleController(ctrl_local_controller)
+    ctrl_local_controller.parentController(CInfoList[1].jointName)
+
     #コントローラーとIKジョイントのコンストレイント
     ctrlName = CInfoList[2].ctrlName #'CTRL_IK_' + limbs[2] + LR
     pvName   = CInfoList[1].ctrlName #'CTRL_PV_IK_'  + limbs[1] + LR
+    local_Ctrl_Name = ctrl_local_controller.ctrlName
     ikName   = 'IK' + CInfoList[2].jointName
     pVector  = ikName + '.poleVector'
     PVOffset = ikName + '_poleVectorConstraint1.offset'
     sJoint   = CInfoList[0].jointName
     eEfector = CInfoList[2].jointName
+
+    #コントローラーにフォローハンド用のアトリビュートを追加
+    cmds.addAttr(ctrlName, keyable = True, shortName='pw', longName='LocalSpace', defaultValue=1.0, minValue=0.0, maxValue=1.0 )
 
     cmds.ikHandle(n=ikName, sol='ikRPsolver', sj=sJoint, ee=eEfector)
 
@@ -317,6 +346,11 @@ def generateIKLimbs(controllerInfoList):
     #ボックスコントローラーの回転のコンスト
     srcCTRL = ctrlName
     dstJNT = eEfector
+    cmds.orientConstraint(srcCTRL, dstJNT, mo=True)
+
+    #ローカルコントローラーの回転のコンスト
+    srcCTRL = local_Ctrl_Name
+    dstJNT  = local_rot_joint
     cmds.orientConstraint(srcCTRL, dstJNT, mo=True)
 
  
@@ -581,7 +615,7 @@ def setLimbsFKSwitch(controllerInfoList, switch):
     reverseName = 'rev' + CInfoList[2].primJntName + 'FK' + CInfoList[2].pos
 
     tempNodeName = cmds.shadingNode('reverse', asUtility=True)
-    cmds.rename(tempNodeName, reverseName)		
+    cmds.rename(tempNodeName, reverseName)
     cmds.connectAttr(switchName + '.translateZ', reverseName + '.inputZ', f=True)
 
     for limb in CInfoList:
@@ -602,6 +636,14 @@ def setLimbsIKSwitch(controllerInfoList, switch):
     CInfoList = controllerInfoList
     #switchName = switch + CInfoList[2].pos  #左右が取れればいいのでどこでもいいし何でもいい
     switchName = switch #猫又のFL問題が在ったので、ここでLR取るんじゃなくて外でスイッチ名指定しちゃう
+    condition_name = 'isFollow' + CInfoList[2].primJntName + 'FK' + CInfoList[2].pos
+
+    #フォローハンドのオンオフ
+    temp_node_name = cmds.shadingNode('condition', asUtility=True)
+    cmds.rename(temp_node_name, condition_name)
+    cmds.connectAttr(switchName + '.translateZ', condition_name + '.colorIfFalse.colorIfFalseR', f=True)
+    cmds.connectAttr(switchName + '.translateZ', condition_name + '.secondTerm', f=True)
+    cmds.setAttr(condition_name + '.firstTerm', 1)
 
     for limb in CInfoList:
         #ベイクジョイントとIK操作ジョイントのコンストレイント
@@ -613,12 +655,50 @@ def setLimbsIKSwitch(controllerInfoList, switch):
         #reverseノードのアウトプットをウェイトとvisibilityに繋げる
         constWeight    = dstJointconst + srcJoint + 'W1'
         cmds.connectAttr(switchName + '.translateZ', constWeight, f=True)
+    
+    #handoだけもう一回ローカルジョイントとつなげる
+    limb = CInfoList[2]
+    srcJoint = 'IK_' +  limb.primJntName + '_local' + limb.pos #IK_hand_local_R
+    dstJoint = limb.NS + limb.primJntName + limb.pos #'MODEL:' + limb + pos 
+    dstJointconst = limb.primJntName + limb.pos + '_parentConstraint1.'
+    cmds.parentConstraint(srcJoint, dstJoint, mo=True)
+
+    #hand用のrevを作る
+    follow_hand_reverse = 'fh_rev' + CInfoList[2].primJntName + CInfoList[2].pos
+
+    tempNodeName = cmds.shadingNode('reverse', asUtility=True)
+    cmds.rename(tempNodeName, follow_hand_reverse)
+
+    #handのウェイトを切り替えるやつを繋ぎなおす
+    cmds.connectAttr(CInfoList[2].ctrlName + '.LocalSpace', condition_name + '.colorIfTrueR', f=True)
+
+    constWeight = dstJointconst + srcJoint + 'W2'   #ローカルハンド側のウェイト
+    cmds.connectAttr(condition_name + '.outColorR', constWeight, f=True)
+
+    constWeight = dstJointconst + 'IK_' + limb.primJntName + limb.pos + 'W1'   #IKコントローラー側のウェイト
+    cmds.connectAttr(condition_name + '.outColorR', follow_hand_reverse + '.inputX', f=True)
+    cmds.connectAttr(follow_hand_reverse + '.outputX', constWeight, f=True)
+    #ローカルハンドのコンストレイントのつなぎここまで
 
     ctrlVisibility = CInfoList[2].ctrlName + '.visibility'
     cmds.connectAttr(switchName + '.translateZ', ctrlVisibility, f=True)
 
     ctrlVisibility = CInfoList[1].ctrlName + '.visibility'
     cmds.connectAttr(switchName + '.translateZ', ctrlVisibility, f=True)
+
+    #ローカルハンドの表示の設定
+    #FKIKスイッチ判定用のコンディションを作る
+    condition_name = 'localHandVis' + CInfoList[2].primJntName + CInfoList[2].pos
+    temp_node_name = cmds.shadingNode('condition', asUtility=True)
+    cmds.rename(temp_node_name, condition_name)
+
+    #コンディションへの接続
+    cmds.connectAttr(CInfoList[2].ctrlName + '.LocalSpace', condition_name + '.colorIfFalseR', f=True)
+    cmds.connectAttr(switchName + '.translateZ', condition_name + '.colorIfTrueR', f=True)
+    cmds.connectAttr(switchName + '.translateZ', condition_name + '.firstTerm', f=True)
+    
+    cmds.connectAttr(condition_name + '.outColorR', 'CTRL_' + srcJoint + '.visibility', f=True)
+    #ローカルハンドの表示設定ここまで
 
 #↓手と足で分けたいけど、分けるなら関数にするほどでもなくない？って感じなのでどうするかちょっと考える
 #とりあえずCUIにはmayaコマンドがインポートされていないので、こっちでバラバラにした
