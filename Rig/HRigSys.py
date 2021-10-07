@@ -247,6 +247,33 @@ def deleteUnneceJoint(unnecessaryJoint):
     print('Delete ' + delJoint + '.')
     return delJoint
 
+def generate_Head_Controller(controller_infomation):
+    ctrl_head = Head_Unit(controller_infomation)
+    ctrl_head.create_Controller()
+
+class Head_Unit():
+    def __init__(self, controller_infomation):
+        self.ctrl_info = controller_infomation
+    
+    def create_Controller(self):
+        print(self.ctrl_info.ctrlName)
+        createSimpleController(self.ctrl_info, isConstraint=True)
+        
+        self.ctrl_info.parentController(self.ctrl_info.rootParent.ctrlName)
+
+        #ヘッドエイムの制作
+        head_aim_loc = cmds.spaceLocator(n='loc_headAim')
+        cmds.parentConstraint(self.ctrl_info.ctrlName, head_aim_loc)
+        cmds.delete(head_aim_loc, cn=True)
+        HToolsLib.freezeAndDeletehistory(head_aim_loc)
+        cmds.move(0, 0, 3, r=True, wd=True)
+        HToolsLib.freezeAndDeletehistory(head_aim_loc)
+
+        cmds.aimConstraint(head_aim_loc, self.ctrl_info.ofstName, mo=True)
+
+        cmds.parent(head_aim_loc, 'CTRL_tr_C')
+
+
 def generateFKLimbs(controllerInfoList):
     #FK用ジョイントの複製とFKコントローラーの生成、FKジョイントとFKコントローラーとのコンストレイントまで一括でやる
     CInfoList = controllerInfoList
