@@ -663,14 +663,35 @@ def setLimbsIKSwitch(controllerInfoList, switch):
     CInfoList = controllerInfoList
     #switchName = switch + CInfoList[2].pos  #左右が取れればいいのでどこでもいいし何でもいい
     switchName = switch #猫又のFL問題が在ったので、ここでLR取るんじゃなくて外でスイッチ名指定しちゃう
-    condition_name = 'isFollow' + CInfoList[2].primJntName + 'FK' + CInfoList[2].pos
 
-    #フォローハンドのオンオフ
+    condition_name = 'isGlobal' + CInfoList[2].primJntName + CInfoList[2].pos
+
+    #IK側のフォローハンドのオンオフ
     temp_node_name = cmds.shadingNode('condition', asUtility=True)
     cmds.rename(temp_node_name, condition_name)
     cmds.connectAttr(switchName + '.translateZ', condition_name + '.colorIfFalse.colorIfFalseR', f=True)
-    cmds.connectAttr(switchName + '.translateZ', condition_name + '.secondTerm', f=True)
+    cmds.connectAttr(CInfoList[2].ctrlName + '.LocalSpace', condition_name + '.secondTerm', f=True)
     cmds.setAttr(condition_name + '.firstTerm', 1)
+
+    #condition_name = 'isFollow' + CInfoList[2].primJntName + 'FK' + CInfoList[2].pos
+
+    #フォローハンドのオンオフ
+    condition_name_01 = 'isFollow' + CInfoList[2].primJntName + 'FK' + CInfoList[2].pos
+    temp_node_name = cmds.shadingNode('condition', asUtility=True)
+    cmds.rename(temp_node_name, condition_name_01)
+    #cmds.connectAttr(switchName + '.translateZ', condition_name_01 + '.colorIfFalse.colorIfFalseR', f=True)
+    cmds.connectAttr(CInfoList[2].ctrlName + '.LocalSpace', condition_name_01 + '.secondTerm', f=True)
+    cmds.setAttr(condition_name_01 + '.firstTerm', 1)
+    cmds.setAttr(condition_name_01 + '.colorIfTrueR', 1)
+    cmds.setAttr(condition_name_01 + '.colorIfFalseR', 0)
+
+    condition_name_02 = 'isIK' + CInfoList[2].primJntName + 'FK' + CInfoList[2].pos
+    temp_node_name = cmds.shadingNode('condition', asUtility=True)
+    cmds.rename(temp_node_name, condition_name_02)
+    cmds.connectAttr(condition_name_01 + '.outColor.outColorR', condition_name_02 + '.colorIfTrue.colorIfTrueR', f=True)
+    cmds.connectAttr(switchName + '.translateZ', condition_name_02 + '.secondTerm', f=True)
+    cmds.setAttr(condition_name_02 + '.firstTerm', 1)
+    cmds.setAttr(condition_name_02 + '.colorIfFalseR', 0)
 
     for limb in CInfoList:
         #ベイクジョイントとIK操作ジョイントのコンストレイント
@@ -683,7 +704,7 @@ def setLimbsIKSwitch(controllerInfoList, switch):
         constWeight    = dstJointconst + srcJoint + 'W1'
         cmds.connectAttr(switchName + '.translateZ', constWeight, f=True)
     
-    #handoだけもう一回ローカルジョイントとつなげる
+    #handだけもう一回ローカルジョイントとつなげる
     limb = CInfoList[2]
     srcJoint = 'IK_' +  limb.primJntName + '_local' + limb.pos #IK_hand_local_R
     dstJoint = limb.NS + limb.primJntName + limb.pos #'MODEL:' + limb + pos 
@@ -691,20 +712,20 @@ def setLimbsIKSwitch(controllerInfoList, switch):
     cmds.parentConstraint(srcJoint, dstJoint, mo=True)
 
     #hand用のrevを作る
-    follow_hand_reverse = 'fh_rev' + CInfoList[2].primJntName + CInfoList[2].pos
+    #follow_hand_reverse = 'fh_rev' + CInfoList[2].primJntName + CInfoList[2].pos
 
-    tempNodeName = cmds.shadingNode('reverse', asUtility=True)
-    cmds.rename(tempNodeName, follow_hand_reverse)
+    #tempNodeName = cmds.shadingNode('reverse', asUtility=True)
+    #cmds.rename(tempNodeName, follow_hand_reverse)
 
     #handのウェイトを切り替えるやつを繋ぎなおす
-    cmds.connectAttr(CInfoList[2].ctrlName + '.LocalSpace', condition_name + '.colorIfTrueR', f=True)
+    #cmds.connectAttr(CInfoList[2].ctrlName + '.LocalSpace', condition_name + '.colorIfTrueR', f=True)
 
     constWeight = dstJointconst + srcJoint + 'W2'   #ローカルハンド側のウェイト
-    cmds.connectAttr(condition_name + '.outColorR', constWeight, f=True)
+    cmds.connectAttr(condition_name_02 + '.outColorR', constWeight, f=True)
 
     constWeight = dstJointconst + 'IK_' + limb.primJntName + limb.pos + 'W1'   #IKコントローラー側のウェイト
-    cmds.connectAttr(condition_name + '.outColorR', follow_hand_reverse + '.inputX', f=True)
-    cmds.connectAttr(follow_hand_reverse + '.outputX', constWeight, f=True)
+    cmds.connectAttr(condition_name + '.outColorR', constWeight, f=True)
+    #cmds.connectAttr(follow_hand_reverse + '.outputX', constWeight, f=True)
     #ローカルハンドのコンストレイントのつなぎここまで
 
     ctrlVisibility = CInfoList[2].ctrlName + '.visibility'
